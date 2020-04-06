@@ -65,8 +65,8 @@
     ;PT1_System_ID db 0x7f          ;one byte indicating the type of file system used (ie. Ext2, ReiserFS, FAT32, NTFS, ...)
     ;PT1_Signature_2 db 0xeb        ;signature 2
     ;PT1_Partition_length_high db 0x0000  ;two bytes indicating the length of the partition (the high 16-bit of the 48-bit LBA format)
-    ;PT1_Partition_Start_low db 0x00010000    ;two bytes indicating the starting LBA (the low 32-bit of the 48-bit LBA format)
-    ;PT1_Partition_length_low db 0x00040000   ;two bytes indicating the length of the partition (the low 32-bit of the 48-bit LBA format)
+    ;PT1_Partition_Start_low db 0x00000001    ;two bytes indicating the starting LBA (the low 32-bit of the 48-bit LBA format)
+    ;PT1_Partition_length_low db 0x00000076   ;two bytes indicating the length of the partition (the low 32-bit of the 48-bit LBA format)
     
 ;---------PARTITION 2------------------
     PT2 times 16 db 0
