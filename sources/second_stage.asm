@@ -23,8 +23,8 @@ BITS 16
       call print_memory_regions
       call get_key_stroke     ; Wait for key storke to jump to second boot stage
 ;      call build_page_table   
-;      call disable_pic
-;      call load_idt_descriptor
+      call disable_pic
+      call load_idt_descriptor
 ;      call switch_to_long_mode
       jmp THIRD_STAGE_CODE_SEG:THIRD_STAGE_OFFSET
       hang:                  ; An infinite loop just in case interrupts are enabled. More on that later.
