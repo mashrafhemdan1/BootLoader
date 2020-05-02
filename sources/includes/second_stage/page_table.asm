@@ -9,7 +9,8 @@ build_page_table:
     pusha                               ; Save all general purpose registers on the stack
 
         ; Store the address (address:offset) where the PT should be stored into es:edi
-        mov es, PAGE_TABLE_BASE_ADDRESS         
+        mov ax, PAGE_TABLE_BASE_ADDRESS
+        mov es, ax        
         mov edi, PAGE_TABLE_BASE_OFFSET
 
         ; Create 4 memory virtual pages and initialize them with zeros
@@ -29,15 +30,23 @@ build_page_table:
         ; Since we are sure that the next 3 hexa digits after the first one indicating the base address, we can use them to store the flags
         mov [es:di], eax                ; Now, the address PDP is stored in the first entry in PML4 
         ; Repeat the previous process for the next level PD
+        
+        push esi
+        mov si, pml4_page_table_msg
+        call bios_print
+        pop esi
+
         add di, MEM_PAGE_4K
         lea eax, [es:di + MEM_PAGE_4K]
         or eax, PAGE_PRESENT_WRITE
         mov [es:di], eax
+
         ; And Pt
         add di, MEM_PAGE_4K
         lea eax, [es:di + MEM_PAGE_4K]
         or eax, PAGE_PRESENT_WRITE
         mov [es:di], eax
+
         ; Now, we need to fill the 512 entries of PT / Map 2 MB
         add di, MEM_PAGE_4K
         mov eax, PAGE_PRESENT_WRITE     ; Store the flags in eax, will be used shortly
@@ -48,5 +57,10 @@ build_page_table:
         cmp eax, 0x200000               ; Check if we reached 2 MB
         jl .pte_loop                    ; Loop again if we still did not reach 2 MB
         
+    push esi
+    mov si, page_table_2mb_msg
+    call bios_print
+    pop esi
+
     popa                                ; Restore all general purpose registers from the stack
     ret

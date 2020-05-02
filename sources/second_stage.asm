@@ -9,6 +9,9 @@ BITS 16
 %define PTR_MEM_REGIONS_TABLE       0x18
 %define THIRD_STAGE_CODE_SEG        0x1000      ; The segment address where we should load the third stage boot laoder
 %define THIRD_STAGE_OFFSET          0x0000      ; The offset where we should start loading the third stage boot loader
+%define CODE_SEG     0x0008         ; Code segment selector in GDT
+%define DATA_SEG     0x0010         ; Data segment selector in GDT
+%define PAGE_TABLE_EFFECTIVE_ADDRESS 0x1000
 
 ;********************************* Main Program **************************************
       call bios_cls
@@ -22,12 +25,14 @@ BITS 16
       call memory_scanner
       call print_memory_regions
       call get_key_stroke     ; Wait for key storke to jump to second boot stage
-      call build_page_table   ; Build a small page table to map 2 MB that we can use in switching to long mode
-      call disable_pic        ; Disable the PIC to avoid any interrupts 
-      call load_idt_descriptor      ; Overwrite the BIOS IDT descriptor by loading a new empty one
-      call switch_to_long_mode      ; Configure the needed control regs to switch to long mode
-      lgdt [GDT64.Pointer]          ; Load the GDT before jumping to the third stage code region
-      jmp THIRD_STAGE_CODE_SEG:THIRD_STAGE_OFFSET
+      call build_page_table   
+      call get_key_stroke     ; Wait for key storke to jump to second boot stage
+      call disable_pic
+      call bios_cls
+      call load_idt_descriptor;from this point on, we cannot use bios interupts
+      call switch_to_long_mode
+      lgdt [GDT64.Pointer]
+      jmp CODE_SEG:LongModeEntry
       hang:                  ; An infinite loop just in case interrupts are enabled. More on that later.
             hlt               ; Halt will suspend the execution. This will not return unless the processor got interrupted.
             jmp hang          ; Jump to hang so we can halt again.
@@ -76,6 +81,7 @@ memory_scan_failed_msg db 'Memory Scan Failed',13,10,0
 read_region_msg db 'read memory region',13,10,0
 pic_disabled_msg db 'PIC disabled',13,10,0
 pml4_page_table_msg db 'PML4 page table created successfully',13,10,0
+page_table_2mb_msg db '2MB has been mapped successfully', 13, 10, 0
 video_x db 0
 video_y db 0
 ;**************************** Subroutines/Functions **********************************
@@ -104,7 +110,7 @@ LongModeEntry:
     mov fs, ax
     mov gs, ax
 
-    jmp 0x10000
+    jmp 0x10000 ;address of the third stage bootloader
 
 lm_hang:             ; Halt Loop
       hlt

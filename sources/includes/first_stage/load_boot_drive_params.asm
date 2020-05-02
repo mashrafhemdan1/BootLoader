@@ -18,9 +18,9 @@
         and cx,0000000000111111b ;and cx with 0000000000111111 to get the 6 right most bits of cx which are the number of sectors per track
         
         mov word[spt],cx       ; then move what's in cx to spt
-        .error:
-        mov si, fault_msg
-        call bios_print
-        jmp hang 
         popa                   ; restore all registers stored in stack
         ret
+
+        .error:
+        jmp hang
+

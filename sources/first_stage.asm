@@ -58,15 +58,14 @@
                               ; We use 510 instead of 512 to reserve the last two bytes for the signature below. 
  
 ;---------PARTITION 1------------------
-    PT1 times 16 db 0
-    ;PT1_Bitflags db 0x81           ;0x81 indicates it's a bootable partition. It's used instead of 0x80 to use LBA instead of CHS format
-    ;PT1_Signature_1 db 0x14        ;it's a signature 
-    ;PT1_Partition_Start_high db 0x0000   ;two bytes indicating the starting LBA (the high 16-bit of the 48-bit LBA format)
-    ;PT1_System_ID db 0x7f          ;one byte indicating the type of file system used (ie. Ext2, ReiserFS, FAT32, NTFS, ...)
-    ;PT1_Signature_2 db 0xeb        ;signature 2
-    ;PT1_Partition_length_high db 0x0000  ;two bytes indicating the length of the partition (the high 16-bit of the 48-bit LBA format)
-    ;PT1_Partition_Start_low db 0x00000001    ;two bytes indicating the starting LBA (the low 32-bit of the 48-bit LBA format)
-    ;PT1_Partition_length_low db 0x00000076   ;two bytes indicating the length of the partition (the low 32-bit of the 48-bit LBA format)
+    PT1_Bitflags db 0x81           ;0x81 indicates it's a bootable partition. It's used instead of 0x80 to use LBA instead of CHS format
+    PT1_Signature_1 db 0x14        ;it's a signature 
+    PT1_Partition_Start_high db 0,0   ;two bytes indicating the starting LBA (the high 16-bit of the 48-bit LBA format)
+    PT1_System_ID db 0x83    ;7f unified     ;one byte indicating the type of file system used (ie. Ext2, ReiserFS, FAT32, NTFS, ...)
+    PT1_Signature_2 db 0xeb        ;signature 2
+    PT1_Partition_length_high db 0,0  ;two bytes indicating the length of the partition (the high 16-bit of the 48-bit LBA format)
+    PT1_Partition_Start_low db 0,0,0,1   ;two bytes indicating the starting LBA (the low 32-bit of the 48-bit LBA format)
+    PT1_Partition_length_low db 0, 0, 0, 0x76   ;two bytes indicating the length of the partition (the low 32-bit of the 48-bit LBA format)
     
 ;---------PARTITION 2------------------
     PT2 times 16 db 0
@@ -76,6 +75,10 @@
     
 ;---------PARTITION 4------------------
     PT4 times 16 db 0
+
+;**************************** Signature **********************************
+      
+
 
 db 0x55,0xAA            ; Boot sector MBR signature
 

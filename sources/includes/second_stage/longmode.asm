@@ -1,8 +1,3 @@
-%define CODE_SEG     0x0008         ; Code segment selector in GDT
-%define DATA_SEG     0x0010         ; Data segment selector in GDT
-%define PAGE_TABLE_EFFECTIVE_ADDRESS 0x1000
-
-
 switch_to_long_mode:
 
      mov eax,10100000b                       ; we will set the 5th bit ,PAE, and 7th bit, PGE,in the cr4 register which is responsible for CPU exensions  

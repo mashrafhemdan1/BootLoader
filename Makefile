@@ -6,7 +6,7 @@ BIN=./bin
 IMAGES=./images
 SOURCES=./sources
 
-all: boot_hello.flp myos.flp
+all: $(IMAGES)/boot_hello.flp $(IMAGES)/myos.flp
 
 $(BIN)/boot_hello.bin: $(SOURCES)/boot_hello.asm
 	$(NASM) -f bin $(SOURCES)/boot_hello.asm -o $(BIN)/boot_hello.bin

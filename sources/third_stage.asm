@@ -1,9 +1,10 @@
 [ORG 0x10000]
 
 [BITS 64]  ;edited for the purpose of this stage as we don't yet reach the long mode
+mov rsi, hello_world_str
+call video_print
+jmp kernel_halt
 
-
-jmp print_hello_word
 Kernel:
 
 bus_loop:
@@ -41,11 +42,6 @@ channel_loop:
 call init_idt
 call setup_idt
 
-print_hello_word: ;added for phase one only
-mov si,hello_world_str
-call bios_print
-jmp kernel_halt ;adder for phase one only
-
 kernel_halt: 
     hlt
     jmp kernel_halt
@@ -59,7 +55,6 @@ kernel_halt:
       %include "sources/includes/third_stage/video.asm"
       %include "sources/includes/third_stage/pit.asm"
       %include "sources/includes/third_stage/ata.asm"
-      %include "sources/includes/first_stage/bios_print.asm" ; for this stage only
 
 ;*******************************************************************************************************************
 

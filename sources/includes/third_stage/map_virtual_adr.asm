@@ -1,8 +1,37 @@
+;Function: map_all_memory
+;the function assumes the PML4 is already set and its address is stored in CR3 register
+
+%define PTR_MEM_REGIONS_COUNT      0x20000
+%define PTR_MEM_REGIONS_TABLE      0x20018
+
+map_all_memory:
+;INPUT: ()
+;save registers
+mov cr3, 0x100000   ;make the cr3 point to the second mega byte so that our PML4 starts from this address
+xor rax, rax ;just to start from the first virtual page
+
+.map_loop:
+call map_virtual_adr  ;map this virtual page to an available physical frame
+
+cmp rdi, 0            ;if the output is zero, this means no physical frames are available
+je .map_exit          ;exit the loop and return 
+
+add rax, 0x1000       ;add 4K to the address to move to the next virtual page
+jmp .map_loop         ;loop again to map the next virtual page
+
+.map_exit:
+ret
+
+
+
 ;Function: map_virtual_adr
 ;the function assumes the PML4 is already set and its address is stored in CR3 register
 
 ;INPUT: rax ---> virtual address
 ;OUTPUT: rdi---> physical address
+
+%define BIT_MAP_ADDRESS 0xXXXXXX
+%define BAGE_PRESENT_WRITE 0x3 011b
 
 map_virtual_adr:
     ;save all registers
@@ -13,7 +42,7 @@ map_virtual_adr:
     push rax
 
     ;LEVEL-BASED SEARCH -----------------
-    mov r11, 1              ;counter to loop over page levels
+    mov r11, 1              ;counter to loop over page levels (start with level 1)
     mov r9, cr3             ;load the address of the level one page table
 
     .level_search:
@@ -32,27 +61,27 @@ map_virtual_adr:
     ;extract first 9 bits  (store in r8)
     mov r8, rax             ;r8 contains the virtual address
     shr r8, r10             ;shift the address until make the 9 bits in the lowest significant positions
-    and r8, 0x0111111111b   ;extract the first 9 bits of those
+    and r8, 0111111111b   ;extract the first 9 bits of those
     ;get the address of the corresponding entry (store in r8)
     shl r8, 3               ;multiply the index by 8 to get the offset address
     add r8, r9              ;get the absolute address of the entry
 
     ;check the present bit
     mov r10, [r8]
-    and r10, 0x1b           ;to get the 0 bit (present bit)
+    and r10, 1b           ;to get the 0 bit (present bit)
     cmp r10, 0
-    je handle_page_fault    ;if zero, go to this function to build the table or find an available physical frame
+    je .handle_page_fault    ;if zero, go to this function to build the table or find an available physical frame
 
     ;get the address of the next page table or the physical frame (depends on the level)
     mov r10, [r8]           ;get entry information in r10
     shr r10, 12             ;so that the base address in the lowest significant 40 bits
     and r10, 0xFFFFFFFFF    ;get the first 36 bits of the base address 
     shl r10, 12             ;shift left by 12 bits. first 12 bits are zeros because any page table is 4K aligned (occupying a physical frame)
-    mov r9, r10             ;then r9 has the address of the next page table
+    mov r9, r10             ;then r9 has the address of the next page table or the mapped physical frame
     
     ;if we are searching in level 4, then jump to calculate the address
     cmp r11, 4
-    jle .calculate_address 
+    je .calculate_address 
 
     add r11, 1              ;update the page table number before jumping to the next level search
     jmp level_search        ;again to search in the next page table
@@ -68,14 +97,12 @@ map_virtual_adr:
     mov r8, cr3
     mov cr3, r8             ;just for the CPU to be aware of recent updates
     
-
    .Mem_Test:
-	mov [rdi],1
-	mov si, [rdi]
-	call bios_print
+	mov [rdi],1             ;
+	mov rsi, [rdi]
+	call video_print
 
-
-
+    .exit:
     ;restore all registers
     pop rax
     pop r11
@@ -90,21 +117,28 @@ map_virtual_adr:
     ;the function assumes the PML4 is already set and its address is stored in CR3 register
 
     ;INPUT: r8 ---> address of the empty entry
-    ;       r11 ---> page table level number
+    ;       r11 ---> page table level number in which this entry exists
     ;OUTPUT: r9---> physical address (in case there is no avaliable physical memory, rdi = 0)
 
     .handle_page_fault:
-        ;find an available physical frame (either for building page table, or mapped physical frame)
-        call get_avPhy_frame
+    mov rbx, BIT_MAP_ADDRESS    ;passing paramter to the function 
+    call get_avPhy_frame
 
-        cmp r11, 4
-        je .find_avPhy_frame ;if this table is the forth page table, then jmp forward to find available physical frame
+    cmp rdi, 0                  ;if zero, this means memory type 1 is fully occupied
+    je .exit                    ;exit the function with an error
+    
+    mov r10, rdi                ;r10 now contains the address of the new physical frame/page table (36_bit base address + 12-bit zeros because it's 4k aligned)
+    or r10, BAGE_PRESENT_WRITE  ;set the attributes (present bit) (36_bit base address + 12-bit attributes) (we don't do any shift as the base address is already in its position)
+    mov [r8], r10               ;change the information inside this entry (address+attributes)
 
-        ;create a page table
-        call find_avPhy_frame
+    mov r9, rdi                 ;move into r9 the address of the physical frame/next page table 
+    cmp r11, 4                  ;if this entry is in the forth table, then this virtual page is mapped to this physical frame
+    je .calculate_address       ;jump to concatenate the offset
 
+    add r11, 1                  ;move to the next page table
+    mov r8, rdi                 ;update the input to the internal function, r8 should contain the entry that needs mapping, (in this case, it's the first one in the table)
+    jmp .handle_page_fault       ;do these steps again
 
-    .find_avPhy_frame:
 
 
 
@@ -119,6 +153,7 @@ INPUT: (rbx) bit map address
 Output: (rdi) physical frame (zero if not found)
 (2) build_bit_map:
 INPUT: (rbx) bit map address
+
 
 
 
